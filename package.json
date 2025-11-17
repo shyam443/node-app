@@ -1,0 +1,8 @@
+{
+  "name": "tiny-build-app",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "echo 'building...' && mkdir -p build && cp src/index.js build/app.js",
+    "start": "node build/app.js"
+  }
+}
