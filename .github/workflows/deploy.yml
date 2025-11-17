@@ -1,0 +1,30 @@
+name: app-Deploy
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create SSH key file
+        run: |
+          echo "${{ secrets.KEY }}" > key.pem
+          chmod 600 key.pem
+
+      - name: Copy code to EC2 using SCP
+        run: |
+          scp -o StrictHostKeyChecking=no -i key.pem -r . ubuntu@${{ secrets.HOST }}:/home/ubuntu/app
+
+      - name: Run EC2 commands using SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ secrets.HOST }} << 'EOF'
+            cd /home/ubuntu/app
+            npm install
+            npm run start
+          EOF
