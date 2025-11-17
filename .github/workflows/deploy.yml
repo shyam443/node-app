@@ -1,4 +1,4 @@
-name: EC2 Full Deploy
+name: Deploy
 
 on:
   push:
@@ -17,33 +17,24 @@ jobs:
           echo "${{ secrets.KEY }}" > /tmp/key.pem
           chmod 600 /tmp/key.pem
 
-      - name: Clean old folder
+      - name: Clean old 
         run: |
           ssh -o StrictHostKeyChecking=no -i /tmp/key.pem ubuntu@${{ secrets.HOST }} << 'EOF'
-            echo "Deleting old folder..."
             rm -rf /home/ubuntu/app
-            echo "Creating clean folder..."
             mkdir -p /home/ubuntu/app
           EOF
 
-      - name: Copy fresh code to EC2
+      - name: Copy code
         run: |
-          echo "Copying new code..."
           scp -o StrictHostKeyChecking=no -i /tmp/key.pem -r * .[^.]* ubuntu@${{ secrets.HOST }}:/home/ubuntu/app
 
-      - name: start pm2
+      - name: Run app 
         run: |
           ssh -o StrictHostKeyChecking=no -i /tmp/key.pem ubuntu@${{ secrets.HOST }} << 'EOF'
             cd /home/ubuntu/app
 
-            echo "Installing dependencies..."
-            npm install
-
-            echo "Installing PM2 if not installed..."
-            sudo npm install -g pm2
-
-            echo "Starting/Restarting app using PM2..."
-            pm2 restart app || pm2 start app.js --name app
-
-            pm2 save
+            pkill node || true
+            
+            node app.js &
+            echo "App start"
           EOF
