@@ -1,4 +1,4 @@
-name: Clean Copy Code to EC2
+name: EC2 Full Deploy
 
 on:
   push:
@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Create SSH key safely
@@ -17,13 +17,33 @@ jobs:
           echo "${{ secrets.KEY }}" > /tmp/key.pem
           chmod 600 /tmp/key.pem
 
-      - name: Clean old folder on EC2
+      - name: Clean old app folder on EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i /tmp/key.pem ubuntu@${{ secrets.HOST }} << 'EOF'
+            echo "Deleting old folder..."
             rm -rf /home/ubuntu/app
+            echo "Creating clean folder..."
             mkdir -p /home/ubuntu/app
           EOF
 
       - name: Copy fresh code to EC2
         run: |
+          echo "Copying new code..."
           scp -o StrictHostKeyChecking=no -i /tmp/key.pem -r * .[^.]* ubuntu@${{ secrets.HOST }}:/home/ubuntu/app
+
+      - name: Install dependencies and start app with PM2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i /tmp/key.pem ubuntu@${{ secrets.HOST }} << 'EOF'
+            cd /home/ubuntu/app
+
+            echo "Installing dependencies..."
+            npm install
+
+            echo "Installing PM2 if not installed..."
+            sudo npm install -g pm2
+
+            echo "Starting/Restarting app using PM2..."
+            pm2 restart myapp || pm2 start app.js --name myapp
+
+            pm2 save
+          EOF
