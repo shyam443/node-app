@@ -1,14 +1,29 @@
-name: DEBUG SSH KEY
+name: Clean Copy Code to EC2
 
 on:
-  workflow_dispatch:
+  push:
+    branches: ["main"]
 
 jobs:
-  debug:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Show RAW secret (FIRST & LAST line only)
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Create SSH key safely
         run: |
-          echo "---- RAW SECRET KEY (first 3 lines) ----"
-          echo "${{ secrets.KEY }}" | head -3
+          echo "${{ secrets.KEY }}" > /tmp/key.pem
+          chmod 600 /tmp/key.pem
+
+      - name: Clean old folder on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i /tmp/key.pem ubuntu@${{ secrets.HOST }} << 'EOF'
+            rm -rf /home/ubuntu/app
+            mkdir -p /home/ubuntu/app
+          EOF
+
+      - name: Copy fresh code to EC2
+        run: |
+          scp -o StrictHostKeyChecking=no -i /tmp/key.pem -r * .[^.]* ubuntu@${{ secrets.HOST }}:/home/ubuntu/app
