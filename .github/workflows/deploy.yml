@@ -1,19 +1,14 @@
-name: Copy code
+name: DEBUG SSH KEY
 
 on:
-  push:
-    branches: ["main"]
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  debug:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Upload project to EC2
+      - name: Show RAW secret (FIRST & LAST line only)
         run: |
-          echo "${{ secrets.KEY }}" > key.pem
-          chmod 600 key.pem
-          scp -o StrictHostKeyChecking=no -i key.pem -r . ubuntu@${{ secrets.HOST }}:/home/ubuntu/app
+          echo "---- RAW SECRET KEY (first 3 lines) ----"
+          echo "${{ secrets.KEY }}" | head -3
